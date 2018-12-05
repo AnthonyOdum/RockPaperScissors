@@ -89,11 +89,18 @@ public class GameClient {
    * greeting.
    */
   public static void main(String[] args) throws Exception {
-    Scanner kb = new Scanner(System.in);
-    GameClient client = new GameClient("localhost", 50051);
+    GameClient client;
+    if (args.length == 1) {
+      client = new GameClient(args[0], 50051);
+    } else if (args.length == 2) {
+      client = new GameClient(args[0], Integer.parseInt(args[1]));
+    } else {
+      client = new GameClient("localhost", 50051);
+    }
+
     String user = "";
     int userID = 0;
-    
+     Scanner kb = new Scanner(System.in);
         
     try {
       /* Access a service running on the local machine on port 50051 */
