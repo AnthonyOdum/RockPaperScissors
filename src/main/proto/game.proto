@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "finalProject";
+option java_outer_classname = "HelloWorldProto";
+option objc_class_prefix = "HLW";
+
+package helloworld;
+
+// The greeting service definition.
+service Game {
+  // Sends a greeting
+  rpc createPlayer (CreatePlayerRequest) returns (CreatePlayerReply) {}
+  rpc ListGames (ListGamesRequest) returns (ListGamesReply) {}
+  rpc createGame (CreateGameRequest) returns (CreateGameReply) {}
+  rpc makeGuess (MakeGuessRequest) returns (MakeGuessReply) {}
+  rpc checkGame (CheckGameRequest) returns (CheckGameReply) {}
+  rpc joinGame (JoinGameRequest) returns (JoinGameReply) {}
+}
+
+// The request message containing the user's name.
+message CreatePlayerRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message CreatePlayerReply {
+  int32 id = 1;
+}
+
+message ListGamesRequest {
+}
+
+message ListGamesReply {
+  repeated GameName game = 1;
+}
+
+message GameName {
+  string name = 1;
+}
+
+message CreateGameRequest {
+  string newGameName = 1;
+  int32 playerID = 2;
+}
+
+message CreateGameReply {
+}
+
+message MakeGuessRequest {
+  string gameName = 1;
+  int32 guess = 2;
+  int32 playerID = 3;
+}
+
+message MakeGuessReply {
+}
+
+message CheckGameRequest{
+  string gameName = 1;
+}
+
+message CheckGameReply{
+  bool gameOver = 1;
+  string winner = 2;
+}
+
+message JoinGameRequest{
+  string gameName = 1;
+  int32 playerID = 2;
+}
+
+message JoinGameReply{
+}
