@@ -3,6 +3,7 @@ package finalProject;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import java.util.*;
 import java.io.IOException;
@@ -102,7 +103,11 @@ public class GameServer {
         gameOne.addPlayer(players.get(playerID));
         games.put(gNam, gameOne);
       } else {
-        throw new IllegalArgumentException("Player ID not found.");
+        responseObserver
+            .onError(Status.INVALID_ARGUMENT
+            .withDescription("Player ID not found.")
+            .asRuntimeException());
+        return;
       }
       responseObserver.onNext(reply.build());
       responseObserver.onCompleted();
@@ -113,11 +118,16 @@ public class GameServer {
       JoinGameReply.Builder reply = JoinGameReply.newBuilder();
       int playerID = req.getPlayerID();
       String gNam = req.getGameName();
-      if(!(games.containsKey(gNam) || players.containsKey(playerID))){
-        throw new IllegalArgumentException("Either game or player does not exist.");
+      if(!games.containsKey(gNam) || !players.containsKey(playerID)){
+        responseObserver
+            .onError(Status.INVALID_ARGUMENT
+            .withDescription("Either game or player does not exist.")
+            .asRuntimeException());
+        return;
       }
 
       GameState g = games.get(gNam);
+      System.out.println(g);
       Player challenger = players.get(playerID);
       g.addPlayer(challenger);
       games.put(gNam, g);
@@ -128,13 +138,21 @@ public class GameServer {
    @Override
     public void makeGuess(MakeGuessRequest req, StreamObserver<MakeGuessReply> responseObserver) {
       if (req.getGuess() != 1 && req.getGuess() != 2 && req.getGuess() != 3) {
-        throw new IllegalArgumentException("Guess not valid.");
+        responseObserver
+            .onError(Status.INVALID_ARGUMENT
+            .withDescription("Guess not valid.")
+            .asRuntimeException());
+        return;
       }
       MakeGuessReply.Builder reply = MakeGuessReply.newBuilder();
       String gName = req.getGameName();
       int playerID = req.getPlayerID();
       if(!games.containsKey(gName)){
-        throw new IllegalArgumentException("Game not found.");
+        responseObserver
+            .onError(Status.INVALID_ARGUMENT
+            .withDescription("Game not found.")
+            .asRuntimeException());
+        return;
       }
       GameState game = games.get(gName);
       synchronized(game) {
@@ -143,7 +161,11 @@ public class GameServer {
         } else if (game.p2.getID() == playerID) {
           game.setP2Guess(req.getGuess());
         } else {
-          throw new IllegalArgumentException("Player ID not found.");
+          responseObserver
+            .onError(Status.INVALID_ARGUMENT
+            .withDescription("Player ID not found.")
+            .asRuntimeException());
+          return;
         }
       }
       responseObserver.onNext(reply.build());

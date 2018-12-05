@@ -137,30 +137,22 @@ public class GameClient {
   }
   
   public static String chooseOrCreateGame(GameClient client, int userID, Scanner kb) {
-    
-      if (client.listGames().isEmpty()) {
+    while (true) {
+      System.out.print("Insert Join or Create: ");
+      String gOption = kb.nextLine();
+      if (gOption.equalsIgnoreCase("join")) {
+        System.out.println(client.listGames());
+        System.out.println("Insert Game Name to Join: ");
+        String gName = kb.nextLine();
+        client.joinGame(gName, userID);
+        return gName;
+      } else if (gOption.equalsIgnoreCase("create")) {
         System.out.print("Insert Game Name: ");
         String gName = kb.nextLine();
         client.createGame(gName, userID);
         return gName;
-      } else {
-        while (true) {
-          System.out.print("Insert Join or Create: ");
-          String gOption = kb.next();
-          if (gOption.equalsIgnoreCase("join")) {
-            System.out.println(client.listGames());
-            System.out.println("Insert Game Name to Join: ");
-            String gName = kb.nextLine();
-            client.joinGame(gName, userID);
-            return gName;
-          } else if (gOption.equalsIgnoreCase("create")) {
-            System.out.print("Insert Game Name: ");
-            String gName = kb.nextLine();
-            client.createGame(gName, userID);
-            return gName;
-          }
-        }
       }
+    }
       
     }
 }
