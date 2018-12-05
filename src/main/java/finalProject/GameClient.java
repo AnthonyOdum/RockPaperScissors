@@ -145,11 +145,13 @@ public class GameClient {
         return gName;
       } else {
         while (true) {
-          System.out.print("Insert Join or Create");
+          System.out.print("Insert Join or Create: ");
           String gOption = kb.next();
           if (gOption.equalsIgnoreCase("join")) {
             System.out.println(client.listGames());
-            throw new IllegalArgumentException("Not implemented");
+            System.out.println("Insert Game Name to Join: ");
+            String gName = kb.nextLine();
+            client.joinGame(gName, userID);
           } else if (gOption.equalsIgnoreCase("create")) {
             System.out.print("Insert Game Name: ");
             String gName = kb.nextLine();
