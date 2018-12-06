@@ -171,6 +171,15 @@ public class GameServer {
       responseObserver.onNext(reply.build());
       responseObserver.onCompleted();
     }
+    
+    @Override
+    public void checkGame(CheckGameRequest req, StreamObserver<CheckGameReply> responseObserver) {
+      CheckGameReply reply = CheckGameReply.newBuilder().setGameOver(iD).build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+    
+    
+    }
    
   }
 }

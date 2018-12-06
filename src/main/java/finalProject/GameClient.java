@@ -82,6 +82,16 @@ public class GameClient {
     MakeGuessReply response = blockingStub.makeGuess(request);
   }
   
+  public String checkGame(String thisGameName) {
+    CheckGameRequest request =
+        CheckGameRequest
+            .newBuilder()
+            .setGameName(thisGameName)
+            .build();
+    CheckGameReply response = blockingStub.checkGame(request);
+    return response.getWinner();
+  }
+  
   
 
   /**
