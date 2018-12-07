@@ -1,4 +1,3 @@
-
 package finalProject;
 
 import io.grpc.ManagedChannel;
@@ -89,7 +88,11 @@ public class GameClient {
             .setGameName(thisGameName)
             .build();
     CheckGameReply response = blockingStub.checkGame(request);
-    return response.getWinner();
+    if (response.getGameOver()) {
+      return response.getWinner();
+    } else {
+      return null;
+    }
   }
   
   
@@ -110,7 +113,7 @@ public class GameClient {
 
     String user = "";
     int userID = 0;
-     Scanner kb = new Scanner(System.in);
+    Scanner kb = new Scanner(System.in);
         
     try {
       /* Access a service running on the local machine on port 50051 */
@@ -119,26 +122,19 @@ public class GameClient {
       userID = client.createPlayer(user);
       
       String gName = chooseOrCreateGame(client, userID, kb);
-      
-      
-     
-      System.out.println("Make a guess: [1 = ROCK, 2 = PAPER, 3 = SCISSORS]");
-      int guess = kb.nextInt();
-     
-      while(!(guess == 1 || guess == 2 || guess == 3)) {
-        System.out.println("Invalid guess. Please guess again: [1 = ROCK, 2 = PAPER, 3 = SCISSORS]");
-        guess = kb.nextInt();
+      while (gName != null) {
+        int guess = readGuess(kb);
+        client.makeGuess(guess, gName, userID);
+        
+        String winner = null;
+        while(winner == null) {
+          winner = client.checkGame(gName);
+          System.out.print(".");
+          Thread.sleep(200);
+        }
+        System.out.println("\nThe winner is " + winner);
+        gName = chooseOrCreateGame(client, userID, kb);
       }
-     
-      client.makeGuess(guess, gName, userID);
-     
-      //CheckGameResponse r = client.checkGame(...);
-      //while (!r.isGameOver()) {
-       //sleepamount of time between checks
-       //r = client.checkGame(...);
-      //}
-     
-      
     } catch (StatusRuntimeException e) {
       logger.log(Level.SEVERE, "RPC failed: {0}", e.getStatus()); 
     } finally {
@@ -148,7 +144,7 @@ public class GameClient {
   
   public static String chooseOrCreateGame(GameClient client, int userID, Scanner kb) {
     while (true) {
-      System.out.print("Insert Join or Create: ");
+      System.out.print("Insert Join, Create or exit: ");
       String gOption = kb.nextLine();
       if (gOption.equalsIgnoreCase("join")) {
         System.out.println(client.listGames());
@@ -161,8 +157,20 @@ public class GameClient {
         String gName = kb.nextLine();
         client.createGame(gName, userID);
         return gName;
+      } else if (gOption.equalsIgnoreCase("exit")) {
+        return null;
       }
+    } 
+  }
+
+  public static int readGuess(Scanner kb) {
+    System.out.println("Make a guess: [1 = ROCK, 2 = PAPER, 3 = SCISSORS]");
+    int guess = kb.nextInt();
+   
+    while(!(guess == 1 || guess == 2 || guess == 3)) {
+      System.out.println("Invalid guess. Please guess again: [1 = ROCK, 2 = PAPER, 3 = SCISSORS]");
+      guess = kb.nextInt();
     }
-      
-    }
+    return guess;
+  }
 }

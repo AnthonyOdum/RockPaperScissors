@@ -1,4 +1,3 @@
-
 package finalProject;
 
 import io.grpc.Server;
@@ -75,9 +74,7 @@ public class GameServer {
       synchronized(players) {
         Player playerOne = new Player(req.getName(), iD);
         players.put(iD, playerOne);
-        if(!req.getName().equalsIgnoreCase("stop")){
-           System.out.println("Player " + players.size() + ": " + req.getName() + " - " + iD);
-        }
+        System.out.println("Player " + players.size() + ": " + req.getName() + " - " + iD);
       }
     }
     
@@ -86,8 +83,10 @@ public class GameServer {
       ListGamesReply.Builder reply = ListGamesReply.newBuilder();
       for (GameState gs : games.values()) {
         String name = gs.getName();
-        GameName newGame = GameName.newBuilder().setName(name).build();
-        reply.addGame(newGame);
+        if (gs.getWinner() == null) {
+          GameName newGame = GameName.newBuilder().setName(name).build();
+          reply.addGame(newGame);
+        }
       }
       responseObserver.onNext(reply.build());
       responseObserver.onCompleted();
@@ -98,6 +97,13 @@ public class GameServer {
       CreateGameReply.Builder reply = CreateGameReply.newBuilder();
       int playerID = req.getPlayerID();
       String gNam = req.getNewGameName();
+      if (games.containsKey(gNam)) {
+        responseObserver
+            .onError(Status.INVALID_ARGUMENT
+                .withDescription("Game already exists")
+                .asRuntimeException());
+        return;
+      }
       if(players.containsKey(playerID)){
         GameState gameOne = new GameState(gNam);
         gameOne.addPlayer(players.get(playerID));
@@ -105,8 +111,8 @@ public class GameServer {
       } else {
         responseObserver
             .onError(Status.INVALID_ARGUMENT
-            .withDescription("Player ID not found.")
-            .asRuntimeException());
+                .withDescription("Player ID not found.")
+                .asRuntimeException());
         return;
       }
       responseObserver.onNext(reply.build());
@@ -115,67 +121,78 @@ public class GameServer {
     
     @Override
     public void joinGame(JoinGameRequest req, StreamObserver<JoinGameReply> responseObserver) {
-      JoinGameReply.Builder reply = JoinGameReply.newBuilder();
-      int playerID = req.getPlayerID();
-      String gNam = req.getGameName();
-      if(!games.containsKey(gNam) || !players.containsKey(playerID)){
-        responseObserver
-            .onError(Status.INVALID_ARGUMENT
-            .withDescription("Either game or player does not exist.")
-            .asRuntimeException());
-        return;
-      }
+      try {
+        JoinGameReply.Builder reply = JoinGameReply.newBuilder();
+        int playerID = req.getPlayerID();
+        String gNam = req.getGameName();
+        if(!games.containsKey(gNam) || !players.containsKey(playerID)){
+          throw new IllegalArgumentException("Either game or player does not exist.");
+        }
 
-      GameState g = games.get(gNam);
-      System.out.println(g);
-      Player challenger = players.get(playerID);
-      g.addPlayer(challenger);
-      games.put(gNam, g);
-      responseObserver.onNext(reply.build());
-      responseObserver.onCompleted();
+        GameState g = games.get(gNam);
+        Player challenger = players.get(playerID);
+        g.addPlayer(challenger);
+        games.put(gNam, g);
+        responseObserver.onNext(reply.build());
+        responseObserver.onCompleted();
+      } catch (IllegalArgumentException e) {
+        responseObserver
+          .onError(Status.INVALID_ARGUMENT
+              .withDescription(e.getMessage())
+              .asRuntimeException());
+      } 
     }
     
    @Override
     public void makeGuess(MakeGuessRequest req, StreamObserver<MakeGuessReply> responseObserver) {
-      if (req.getGuess() != 1 && req.getGuess() != 2 && req.getGuess() != 3) {
-        responseObserver
-            .onError(Status.INVALID_ARGUMENT
-            .withDescription("Guess not valid.")
-            .asRuntimeException());
-        return;
-      }
-      MakeGuessReply.Builder reply = MakeGuessReply.newBuilder();
-      String gName = req.getGameName();
-      int playerID = req.getPlayerID();
-      if(!games.containsKey(gName)){
-        responseObserver
-            .onError(Status.INVALID_ARGUMENT
-            .withDescription("Game not found.")
-            .asRuntimeException());
-        return;
-      }
-      GameState game = games.get(gName);
-      synchronized(game) {
-        if (game.p1.getID() == playerID) {
-          game.setP1Guess(req.getGuess());
-        } else if (game.p2.getID() == playerID) {
-          game.setP2Guess(req.getGuess());
-        } else {
-          responseObserver
-            .onError(Status.INVALID_ARGUMENT
-            .withDescription("Player ID not found.")
-            .asRuntimeException());
-          return;
+      try {
+        if (req.getGuess() != 1 && req.getGuess() != 2 && req.getGuess() != 3) {
+          throw new IllegalArgumentException("Guess not valid.");
         }
+        MakeGuessReply.Builder reply = MakeGuessReply.newBuilder();
+        String gName = req.getGameName();
+        int playerID = req.getPlayerID();
+        if(!games.containsKey(gName)){
+          throw new IllegalArgumentException("Game not found.");
+        }
+        GameState game = games.get(gName);
+        synchronized(game) {
+          if (game.p1.getID() == playerID) {
+            game.setP1Guess(req.getGuess());
+          } else if (game.p2.getID() == playerID) {
+            game.setP2Guess(req.getGuess());
+          } else {
+            throw new IllegalArgumentException("Player ID not found.");
+          }
+        }
+        responseObserver.onNext(reply.build());
+        responseObserver.onCompleted();
+      } catch (IllegalArgumentException e) {
+        responseObserver
+          .onError(Status.INVALID_ARGUMENT
+              .withDescription(e.getMessage())
+              .asRuntimeException());
       }
-      responseObserver.onNext(reply.build());
-      responseObserver.onCompleted();
     }
     
     @Override
     public void checkGame(CheckGameRequest req, StreamObserver<CheckGameReply> responseObserver) {
-      CheckGameReply reply = CheckGameReply.newBuilder().setGameOver(iD).build();
-      responseObserver.onNext(reply);
+      String gName = req.getGameName();
+      if(!games.containsKey(gName)){
+        responseObserver
+            .onError(Status.INVALID_ARGUMENT
+                .withDescription("Game not found.")
+                .asRuntimeException());
+        return;
+      }
+      GameState game = games.get(gName);
+      String winner = game.getWinner();
+
+      CheckGameReply.Builder reply = CheckGameReply.newBuilder();
+      if (winner != null) {
+        reply.setGameOver(true).setWinner(winner);
+      }
+      responseObserver.onNext(reply.build());
       responseObserver.onCompleted();
     
     
